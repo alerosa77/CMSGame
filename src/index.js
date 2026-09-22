@@ -17,7 +17,7 @@ html = html
   .replace("state=null;const esc", "state=null,draftName=localStorage.cmsName||'';const esc")
   .replace("esc(localStorage.cmsName||'')", "esc(draftName)")
   .replace("document.getElementById('join').onclick", "document.getElementById('name').oninput=e=>{draftName=e.target.value};document.getElementById('join').onclick")
-  .replace("if(state.phase==='lobby')lobby();else if", "if(state.phase==='lobby'){if(document.activeElement?.id==='name'){let c=document.querySelector('.count');if(c)c.textContent=state.players.length+' pessoa'+(state.players.length===1?'':'s')+' na sala'}else lobby()}else if");
+  .replace("if(state.phase==='lobby')lobby();else if", "if(state.phase==='lobby'){if(document.getElementById('name')){let c=document.querySelector('.count');if(c)c.textContent=state.players.length+' pessoa'+(state.players.length===1?'':'s')+' na sala'}else lobby()}else if");
 
 function json(data, status=200){return new Response(JSON.stringify(data),{status,headers:{'content-type':'application/json','cache-control':'no-store'}})}
 async function ensure(db){await db.batch([db.prepare('CREATE TABLE IF NOT EXISTS game_state (id INTEGER PRIMARY KEY CHECK (id = 1), phase TEXT NOT NULL DEFAULT \'lobby\', question_index INTEGER NOT NULL DEFAULT 0, round_id INTEGER NOT NULL DEFAULT 0)'),db.prepare('CREATE TABLE IF NOT EXISTS players (id TEXT PRIMARY KEY, name TEXT NOT NULL, score INTEGER NOT NULL DEFAULT 0, joined_at INTEGER NOT NULL)'),db.prepare('CREATE TABLE IF NOT EXISTS answers (player_id TEXT NOT NULL, round_id INTEGER NOT NULL, option_index INTEGER NOT NULL, answered_at INTEGER NOT NULL, PRIMARY KEY (player_id, round_id))'),db.prepare("INSERT OR IGNORE INTO game_state (id,phase,question_index,round_id) VALUES (1,'lobby',0,0)")])}
