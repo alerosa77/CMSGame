@@ -1,0 +1,21 @@
+CREATE TABLE game_state (
+  id INTEGER PRIMARY KEY CHECK (id = 1),
+  phase TEXT NOT NULL DEFAULT 'lobby',
+  question_index INTEGER NOT NULL DEFAULT 0,
+  round_id INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE players (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  score INTEGER NOT NULL DEFAULT 0,
+  joined_at INTEGER NOT NULL
+);
+CREATE TABLE answers (
+  player_id TEXT NOT NULL,
+  round_id INTEGER NOT NULL,
+  option_index INTEGER NOT NULL,
+  answered_at INTEGER NOT NULL,
+  PRIMARY KEY (player_id, round_id)
+);
+CREATE INDEX idx_answers_round_id ON answers(round_id);
+INSERT INTO game_state (id, phase, question_index, round_id) VALUES (1, 'lobby', 0, 0);

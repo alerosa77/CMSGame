@@ -1,0 +1,6 @@
+{
+  "name": "the-big-cms-game",
+  "private": true,
+  "type": "module",
+  "scripts": { "build": "node build.mjs" }
+}
