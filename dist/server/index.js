@@ -76,6 +76,27 @@ function addRealtimeClient(html) {
     }
     connectRealtime();
     setInterval(tick,10000)`
+  ).replace(
+    '</body>',
+    `<script>
+    document.addEventListener('click',async event=>{
+      const button=event.target.closest('#start');
+      if(!button)return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      const previousLabel=button.textContent;
+      button.disabled=true;
+      button.textContent=previousLabel==='Começar jogo'?'Começando…':'Avançando…';
+      try{
+        const response=await fetch('/api/host/next',{method:'POST',headers:{'content-type':'application/json'},body:'{}'});
+        if(!response.ok)throw new Error('Falha ao avançar');
+        await tick();
+      }catch{
+        button.disabled=false;
+        button.textContent='Tentar novamente';
+      }
+    },true);
+    </script></body>`
   );
 }
 
