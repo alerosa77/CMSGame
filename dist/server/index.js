@@ -90,7 +90,11 @@ function addRealtimeClient(html) {
       try{
         const response=await fetch('/api/host/next',{method:'POST',headers:{'content-type':'application/json'},body:'{}'});
         if(!response.ok)throw new Error('Falha ao avançar');
-        await tick();
+        const payload=await response.json();
+        if(payload.state){
+          state=payload.state;
+          if(state.phase==='lobby')lobby();else if(state.phase==='question')question();else scores();
+        }else await tick();
       }catch{
         button.disabled=false;
         button.textContent='Tentar novamente';
@@ -108,8 +112,21 @@ export default {
     const response = await game.fetch(request, env, context);
     const isMutation = request.method === 'POST' && url.pathname.startsWith('/api/');
     if (isMutation && response.ok) {
-      await bumpVersion(env);
       notifyPlayers();
+      const versionUpdate = bumpVersion(env);
+      if (context?.waitUntil) context.waitUntil(versionUpdate);
+      else await versionUpdate;
+    }
+
+    if (request.method === 'POST' && url.pathname === '/api/host/next' && response.ok) {
+      const stateRequest = new Request(new URL('/api/state', request.url), {
+        headers: request.headers,
+      });
+      const stateResponse = await game.fetch(stateRequest, env, context);
+      return new Response(JSON.stringify({ ok: true, state: await stateResponse.json() }), {
+        status: 200,
+        headers: { 'content-type': 'application/json', 'cache-control': 'no-store' },
+      });
     }
 
     const contentType = response.headers.get('content-type') || '';
