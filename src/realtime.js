@@ -26,11 +26,7 @@ async function bumpVersion(env) {
 function notifyPlayers() {
   const message = JSON.stringify({ type: 'state-changed', at: Date.now() });
   for (const socket of connections) {
-    try {
-      socket.send(message);
-    } catch {
-      connections.delete(socket);
-    }
+    try { socket.send(message); } catch { connections.delete(socket); }
   }
 }
 
@@ -47,9 +43,7 @@ function openSocket(request, env) {
     if (event.data !== 'sync') return;
     try {
       const version = await readVersion(env);
-      if (lastVersion !== null && version !== lastVersion) {
-        server.send(JSON.stringify({ type: 'state-changed', at: Date.now() }));
-      }
+      if (lastVersion !== null && version !== lastVersion) server.send(JSON.stringify({ type: 'state-changed', at: Date.now() }));
       lastVersion = version;
     } catch {
       server.send(JSON.stringify({ type: 'sync-error' }));
@@ -59,84 +53,18 @@ function openSocket(request, env) {
   return new Response(null, { status: 101, webSocket: client });
 }
 
-function addRealtimeClient(html) {
-  return html.replace(
-    'tick();setInterval(tick,1400)',
-    `tick();
-    let realtimeRetry;
-    function connectRealtime(){
-      clearTimeout(realtimeRetry);
-      const protocol=location.protocol==='https:'?'wss':'ws';
-      const socket=new WebSocket(protocol+'://'+location.host+'/api/ws');
-      let syncTimer;
-      socket.onopen=()=>{syncTimer=setInterval(()=>{if(socket.readyState===WebSocket.OPEN)socket.send('sync')},700)};
-      socket.onmessage=event=>{try{const message=JSON.parse(event.data);if(message.type==='state-changed')tick()}catch{}};
-      socket.onclose=()=>{clearInterval(syncTimer);realtimeRetry=setTimeout(connectRealtime,1500)};
-      socket.onerror=()=>socket.close();
-    }
-    connectRealtime();
-    setInterval(tick,10000)`
-  ).replace(
-    '</body>',
-    `<script>
-    document.addEventListener('click',async event=>{
-      const button=event.target.closest('#start');
-      if(!button)return;
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      const previousLabel=button.textContent;
-      button.disabled=true;
-      button.textContent=previousLabel==='Começar jogo'?'Começando…':'Avançando…';
-      try{
-        const response=await fetch('/api/host/next',{method:'POST',headers:{'content-type':'application/json'},body:'{}'});
-        if(!response.ok)throw new Error('Falha ao avançar');
-        const payload=await response.json();
-        if(payload.state){
-          state=payload.state;
-          if(state.phase==='lobby')lobby();else if(state.phase==='question')question();else scores();
-        }else await tick();
-      }catch{
-        button.disabled=false;
-        button.textContent='Tentar novamente';
-      }
-    },true);
-    </script></body>`
-  );
-}
-
 export default {
   async fetch(request, env, context) {
     const url = new URL(request.url);
     if (url.pathname === '/api/ws') return openSocket(request, env);
-
     const response = await game.fetch(request, env, context);
     const isMutation = request.method === 'POST' && url.pathname.startsWith('/api/');
     if (isMutation && response.ok) {
       notifyPlayers();
-      const versionUpdate = bumpVersion(env);
-      if (context?.waitUntil) context.waitUntil(versionUpdate);
-      else await versionUpdate;
+      const update = bumpVersion(env);
+      if (context?.waitUntil) context.waitUntil(update);
+      else await update;
     }
-
-    if (request.method === 'POST' && url.pathname === '/api/host/next' && response.ok) {
-      const stateRequest = new Request(new URL('/api/state', request.url), {
-        headers: request.headers,
-      });
-      const stateResponse = await game.fetch(stateRequest, env, context);
-      return new Response(JSON.stringify({ ok: true, state: await stateResponse.json() }), {
-        status: 200,
-        headers: { 'content-type': 'application/json', 'cache-control': 'no-store' },
-      });
-    }
-
-    const contentType = response.headers.get('content-type') || '';
-    if (!contentType.includes('text/html')) return response;
-
-    const headers = new Headers(response.headers);
-    headers.set('cache-control', 'no-store');
-    return new Response(addRealtimeClient(await response.text()), {
-      status: response.status,
-      headers,
-    });
+    return response;
   },
 };
