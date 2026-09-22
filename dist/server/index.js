@@ -17,6 +17,7 @@ html = html
   .replace("state=null;const esc", "state=null,draftName=localStorage.cmsName||'';const esc")
   .replace("esc(localStorage.cmsName||'')", "esc(draftName)")
   .replace("document.getElementById('join').onclick", "document.getElementById('name').oninput=e=>{draftName=e.target.value};document.getElementById('join').onclick")
+  .replace("localStorage.cmsName=n;tick()}}function hostControls", "localStorage.cmsName=n;tick()};bindHost()}function hostControls")
   .replace("if(state.phase==='lobby')lobby();else if", "if(state.phase==='lobby'){if(document.getElementById('name')){let c=document.querySelector('.count');if(c)c.textContent=state.players.length+' pessoa'+(state.players.length===1?'':'s')+' na sala'}else lobby()}else if");
 
 function json(data, status=200){return new Response(JSON.stringify(data),{status,headers:{'content-type':'application/json','cache-control':'no-store'}})}
