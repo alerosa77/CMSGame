@@ -37,3 +37,7 @@ CREATE TABLE IF NOT EXISTS numeric_answers (
   points INTEGER NOT NULL DEFAULT 0,
   PRIMARY KEY (player_id, round_id)
 );
+CREATE TABLE IF NOT EXISTS game_questions (
+  position INTEGER PRIMARY KEY,
+  question_key TEXT NOT NULL
+);
